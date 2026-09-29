@@ -89,6 +89,7 @@ private:
   OrderedPoint<PointT> *d_A_;
   cukd::box_t<PointT> *d_bounds_;
   uint32_t M_;
+  cudaStream_t stream_;
 
 public:
   KDTree() = delete;
@@ -96,6 +97,7 @@ public:
 
   KDTree(cudaStream_t stream, const torch::Tensor &A) {
     M_ = A.size(0);
+    stream_ = stream;
 
     CUKD_CUDA_CHECK(cudaMallocAsync((void **)&d_A_,
                                     M_ * sizeof(OrderedPoint<PointT>), stream));
@@ -145,6 +147,11 @@ public:
         idx.data_ptr<int>(), d_X, N, d_bounds_, d_A_, M_);
     CUKD_CUDA_SYNC_CHECK();
     return idx;
+  }
+
+  ~KDTree() {
+    CUKD_CUDA_CALL(FreeAsync(d_A_, stream_));
+    CUKD_CUDA_CALL(FreeAsync(d_bounds_, stream_));
   }
 };
 

@@ -51,7 +51,6 @@ struct KDTreeWrapper : torch::CustomClassHolder {
 
   torch::Tensor QueryClosest(const torch::Tensor &X) {
     TORCH_CHECK(X.is_cuda());
-    TORCH_CHECK(X.size(0) > 2);
     TORCH_CHECK(X.size(-1) == 3 || X.size(-1) == 4);
     TORCH_INTERNAL_ASSERT(X.device().type() == at::DeviceType::CUDA);
 
@@ -70,7 +69,6 @@ struct KDTreeWrapper : torch::CustomClassHolder {
 
   std::vector<torch::Tensor> QueryKNN2(const torch::Tensor &X) {
     TORCH_CHECK(X.is_cuda());
-    TORCH_CHECK(X.size(0) > 2);
     TORCH_CHECK(X.size(-1) == 3 || X.size(-1) == 4);
     TORCH_INTERNAL_ASSERT(X.device().type() == at::DeviceType::CUDA);
 

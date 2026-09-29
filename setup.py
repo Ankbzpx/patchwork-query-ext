@@ -7,7 +7,7 @@ import shutil
 import subprocess
 
 import torch
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
