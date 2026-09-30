@@ -19,8 +19,7 @@ c = -torch.square(ga).sum(1) + ra2
 s = torch.rand((M,)).cuda()
 
 tree = KDTree(ga, ra2, s)
-idx_max_kd, idx_sec_max_kd = tree.query_knn2(X)
-
+idx_max_kd, idx_sec_max_kd = tree.query_knn(X, 2)
 
 _, _, _, _, idx_max_ref, idx_sec_max_ref, _ = logsumexp_s(
     F.pad(X, (0, 1), "constant", 1), torch.hstack([a, c[:, None]]), s, s.new_ones((1,))

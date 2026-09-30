@@ -46,22 +46,22 @@ __global__ void CopyKernel(OrderedPoint<PointT> *points, PointT *positions,
   points[nid].idx = nid;
 }
 
-template <typename PointT>
-__global__ void QueryKNN2Kernel(int *d_indices, int *d_indices_sec,
-                                PointT *d_queries, int n_queries,
-                                const cukd::box_t<PointT> *d_bounds,
-                                OrderedPoint<PointT> *d_nodes, int n_points) {
+template <typename PointT, int K>
+__global__ void QueryKNNKernel(int *d_indices, PointT *d_queries, int n_queries,
+                               const cukd::box_t<PointT> *d_bounds,
+                               OrderedPoint<PointT> *d_nodes, int n_points) {
   int qid = threadIdx.x + blockIdx.x * blockDim.x;
   if (qid >= n_queries)
     return;
 
   PointT queryPos = d_queries[qid];
-  cukd::FixedCandidateList<2> results(INFINITY);
-  cukd::cct::knn<cukd::FixedCandidateList<2>, OrderedPoint<PointT>,
+  cukd::FixedCandidateList<K> results(INFINITY);
+  cukd::cct::knn<cukd::FixedCandidateList<K>, OrderedPoint<PointT>,
                  OrderedPoint_traits<PointT>>(results, queryPos, *d_bounds,
                                               d_nodes, n_points);
-  d_indices[qid] = d_nodes[results.get_pointID(0)].idx;
-  d_indices_sec[qid] = d_nodes[results.get_pointID(1)].idx;
+  for (int i = 0; i < K; i++) {
+    d_indices[n_queries * i + qid] = d_nodes[results.get_pointID(i)].idx;
+  }
 }
 
 template <typename PointT>
@@ -116,22 +116,21 @@ public:
     CUKD_CUDA_SYNC_CHECK();
   }
 
-  std::vector<torch::Tensor> QueryKNN2(cudaStream_t stream,
-                                       const torch::Tensor &X) {
+  template <int K>
+  std::vector<torch::Tensor> QueryKNN(cudaStream_t stream,
+                                      const torch::Tensor &X) {
     uint32_t N = X.size(0);
     // Query
     PointT *d_X = reinterpret_cast<PointT *>(X.data_ptr<T>());
     const torch::TensorOptions idxOpts =
         torch::TensorOptions().dtype(torch::kInt32).device(X.device());
-    torch::Tensor idx = torch::zeros({N}, idxOpts);
-    torch::Tensor idx_sec = torch::zeros({N}, idxOpts);
+    torch::Tensor idx = torch::zeros({K, N}, idxOpts);
 
-    QueryKNN2Kernel<<<dim3(cukd::divRoundUp(N, BATCH_SIZE_N)),
-                      dim3(BATCH_SIZE_N), 0, stream>>>(
-        idx.data_ptr<int>(), idx_sec.data_ptr<int>(), d_X, N, d_bounds_, d_A_,
-        M_);
+    QueryKNNKernel<PointT, K>
+        <<<dim3(cukd::divRoundUp(N, BATCH_SIZE_N)), dim3(BATCH_SIZE_N), 0,
+           stream>>>(idx.data_ptr<int>(), d_X, N, d_bounds_, d_A_, M_);
     CUKD_CUDA_SYNC_CHECK();
-    return {idx, idx_sec};
+    return torch::split(idx, 1, 0);
   }
 
   torch::Tensor QueryClosest(cudaStream_t stream, const torch::Tensor &X) {

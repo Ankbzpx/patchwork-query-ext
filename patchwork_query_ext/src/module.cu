@@ -75,12 +75,66 @@ struct KDTreeWrapper : torch::CustomClassHolder {
     cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     switch (X.size(-1)) {
     case 3:
-      return std::get<std::unique_ptr<KDTree<float, float3>>>(tree_)->QueryKNN2(
-          stream, X);
+      return std::get<std::unique_ptr<KDTree<float, float3>>>(tree_)
+          ->QueryKNN<2>(stream, X);
       break;
     case 4:
-      return std::get<std::unique_ptr<KDTree<float, float4>>>(tree_)->QueryKNN2(
-          stream, X);
+      return std::get<std::unique_ptr<KDTree<float, float4>>>(tree_)
+          ->QueryKNN<2>(stream, X);
+      break;
+    }
+  }
+
+  std::vector<torch::Tensor> QueryKNN3(const torch::Tensor &X) {
+    TORCH_CHECK(X.is_cuda());
+    TORCH_CHECK(X.size(-1) == 3 || X.size(-1) == 4);
+    TORCH_INTERNAL_ASSERT(X.device().type() == at::DeviceType::CUDA);
+
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    switch (X.size(-1)) {
+    case 3:
+      return std::get<std::unique_ptr<KDTree<float, float3>>>(tree_)
+          ->QueryKNN<3>(stream, X);
+      break;
+    case 4:
+      return std::get<std::unique_ptr<KDTree<float, float4>>>(tree_)
+          ->QueryKNN<3>(stream, X);
+      break;
+    }
+  }
+
+  std::vector<torch::Tensor> QueryKNN4(const torch::Tensor &X) {
+    TORCH_CHECK(X.is_cuda());
+    TORCH_CHECK(X.size(-1) == 3 || X.size(-1) == 4);
+    TORCH_INTERNAL_ASSERT(X.device().type() == at::DeviceType::CUDA);
+
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    switch (X.size(-1)) {
+    case 3:
+      return std::get<std::unique_ptr<KDTree<float, float3>>>(tree_)
+          ->QueryKNN<4>(stream, X);
+      break;
+    case 4:
+      return std::get<std::unique_ptr<KDTree<float, float4>>>(tree_)
+          ->QueryKNN<4>(stream, X);
+      break;
+    }
+  }
+
+  std::vector<torch::Tensor> QueryKNN5(const torch::Tensor &X) {
+    TORCH_CHECK(X.is_cuda());
+    TORCH_CHECK(X.size(-1) == 3 || X.size(-1) == 4);
+    TORCH_INTERNAL_ASSERT(X.device().type() == at::DeviceType::CUDA);
+
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    switch (X.size(-1)) {
+    case 3:
+      return std::get<std::unique_ptr<KDTree<float, float3>>>(tree_)
+          ->QueryKNN<5>(stream, X);
+      break;
+    case 4:
+      return std::get<std::unique_ptr<KDTree<float, float4>>>(tree_)
+          ->QueryKNN<5>(stream, X);
       break;
     }
   }
@@ -90,7 +144,10 @@ TORCH_LIBRARY(patchwork_query_ext, m) {
   m.class_<KDTreeWrapper>("KDTree")
       .def(torch::init<torch::Tensor>())
       .def("query_closest", &KDTreeWrapper::QueryClosest)
-      .def("query_knn2", &KDTreeWrapper::QueryKNN2);
+      .def("query_knn2", &KDTreeWrapper::QueryKNN2)
+      .def("query_knn3", &KDTreeWrapper::QueryKNN3)
+      .def("query_knn4", &KDTreeWrapper::QueryKNN4)
+      .def("query_knn5", &KDTreeWrapper::QueryKNN5);
 }
 
 } // namespace patchwork_query_ext
