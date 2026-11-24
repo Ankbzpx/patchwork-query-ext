@@ -1,3 +1,4 @@
+#include <pybind11/eigen.h>
 #include <torch/custom_class.h>
 #include <torch/extension.h>
 
@@ -5,24 +6,9 @@
 #include <c10/cuda/CUDAGuard.h>
 
 #include "kd_query.cuh"
+#include "tri_edge_collapse_quadric_masked.h"
 
-extern "C" {
-/* Creates a dummy empty _C module that can be imported from Python.
-   The import from Python will load the .so consisting of this file
-   in this extension, so that the TORCH_LIBRARY static initializers
-   below are run. */
-PyObject *PyInit__C(void) {
-  static struct PyModuleDef module_def = {
-      PyModuleDef_HEAD_INIT,
-      "_C", /* name of module */
-      NULL, /* module documentation, may be NULL */
-      -1,   /* size of per-interpreter state of the module,
-               or -1 if the module keeps state in global variables. */
-      NULL, /* methods */
-  };
-  return PyModule_Create(&module_def);
-}
-}
+namespace py = pybind11;
 
 namespace patchwork_query_ext {
 
@@ -150,4 +136,32 @@ TORCH_LIBRARY(patchwork_query_ext, m) {
       .def("query_knn5", &KDTreeWrapper::QueryKNN5);
 }
 
+py::list
+masked_quadric_edge_collapse(Eigen::Ref<const RowMatrixXf> V,
+                             Eigen::Ref<const RowMatrixXi> F,
+                             Eigen::Ref<const Eigen::VectorXi> F_label,
+                             Eigen::Ref<const Eigen::VectorXi> F_label2) {
+
+  // It should be unlikely to overflow 32 bit integer
+  RowMatrixXf U;
+  RowMatrixXi G;
+  Eigen::VectorXi C1;
+  Eigen::VectorXi C2;
+  tri_edge_collapse_quadric_masked(V, F, F_label, F_label2, U, G, C1, C2);
+
+  py::list return_list;
+  return_list.append(U);
+  return_list.append(G);
+  return_list.append(C1);
+  return_list.append(C2);
+  return return_list;
+}
+
 } // namespace patchwork_query_ext
+
+// TORCH_EXTENSION_NAME is set in torch.utils.cpp_extension
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+  m.def("masked_quadric_edge_collapse",
+        &patchwork_query_ext::masked_quadric_edge_collapse,
+        "Quadric edge collapse with face mask");
+}

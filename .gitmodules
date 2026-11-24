@@ -1,3 +1,9 @@
 [submodule "patchwork_query_ext/third_party/cudaKDTree"]
 	path = patchwork_query_ext/third_party/cudaKDTree
 	url = https://github.com/ingowald/cudaKDTree.git
+[submodule "patchwork_query_ext/third_party/vcglib"]
+	path = patchwork_query_ext/third_party/vcglib
+	url = https://github.com/cnr-isti-vclab/vcglib.git
+[submodule "patchwork_query_ext/third_party/eigen"]
+	path = patchwork_query_ext/third_party/eigen
+	url = https://gitlab.com/libeigen/eigen.git

@@ -49,7 +49,7 @@ else:
     )
 
 
-cpp_standard = 17
+cpp_standard = 20
 
 # Get CUDA version and make sure the targeted compute capability is compatible
 if os.system("nvcc --version") == 0:
@@ -60,7 +60,7 @@ if os.system("nvcc --version") == 0:
         cuda_version = parse_version(cuda_version.group(1))
         print(f"Detected CUDA version {cuda_version}")
         if cuda_version >= parse_version("11.0"):
-            cpp_standard = 17
+            cpp_standard = 20
 
         supported_compute_capabilities = [
             cc
@@ -127,6 +127,8 @@ setup(
             include_dirs=[
                 os.path.abspath(f"{package_name}/include"),
                 os.path.abspath(f"{package_name}/third_party/cudaKDTree"),
+                os.path.abspath(f"{package_name}/third_party/eigen"),
+                os.path.abspath(f"{package_name}/third_party/vcglib"),
             ],
             extra_compile_args={"cxx": cflags, "nvcc": nvcc_flags},
             libraries=["cuda"],
