@@ -1,6 +1,6 @@
 import torch
 from pathlib import Path
-from . import _C, kdtree, edge_collapse
+from . import _C, kdtree
 
 
 def edge_collapse(V, F, F_label, F_label2):
